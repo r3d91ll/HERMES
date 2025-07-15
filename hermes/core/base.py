@@ -62,3 +62,12 @@ class BaseStorage(ABC):
     def search(self, query_embedding: np.ndarray, k: int = 10) -> List[Dict[str, Any]]:
         """Search for similar documents."""
         pass
+
+
+class BaseAnalyzer(ABC):
+    """Base class for content analyzers."""
+    
+    @abstractmethod
+    def analyze(self, content: str) -> Dict[str, Any]:
+        """Analyze content and return analysis results."""
+        pass

@@ -46,6 +46,7 @@ class ArangoStorage(BaseStorage):
         database: str = "hermes",
         nodes_collection: str = "nodes",
         edges_collection: str = "edges",
+        queries_collection: str = "queries",  # Separate collection for queries
         create_collections: bool = True,
         vector_index_type: str = "hash",  # ArangoDB 3.12+ will have native vector indexes
     ):
@@ -70,6 +71,7 @@ class ArangoStorage(BaseStorage):
         self.database_name = database
         self.nodes_collection_name = nodes_collection
         self.edges_collection_name = edges_collection
+        self.queries_collection_name = queries_collection
         
         # Connect to ArangoDB
         self._connect()
@@ -135,6 +137,17 @@ class ArangoStorage(BaseStorage):
             )
         else:
             self.edges_collection = self.db.collection(self.edges_collection_name)
+        
+        # Create queries collection (special toggleable collection)
+        if not self.db.has_collection(self.queries_collection_name):
+            logger.info(f"Creating queries collection '{self.queries_collection_name}'")
+            self.queries_collection = self.db.create_collection(
+                self.queries_collection_name,
+                edge=False,
+                user_keys=True
+            )
+        else:
+            self.queries_collection = self.db.collection(self.queries_collection_name)
         
         # Create indexes
         self._create_indexes()
@@ -559,3 +572,192 @@ class ArangoStorage(BaseStorage):
         
         if vectors_to_add:
             self.vector_search.add_vectors(vectors_to_add, rebuild=False)
+    
+    def store_query(self, query_id: str, query_data: Dict[str, Any]) -> bool:
+        """
+        Store a query document in the special queries collection.
+        
+        Args:
+            query_id: Unique query identifier
+            query_data: Query document data
+            
+        Returns:
+            Success status
+        """
+        try:
+            # Prepare query document
+            doc = self._prepare_document(query_id, query_data)
+            doc["_toggleable"] = True  # Mark as toggleable
+            
+            # Store in queries collection
+            if self.queries_collection.has(doc["_key"]):
+                self.queries_collection.update(doc)
+                logger.debug(f"Updated query {query_id}")
+            else:
+                self.queries_collection.insert(doc)
+                logger.debug(f"Inserted query {query_id}")
+            
+            # Also store in main nodes collection if active
+            if query_data.get("is_active", True):
+                self.store_document(query_id, query_data)
+            
+            return True
+            
+        except ArangoError as e:
+            logger.error(f"Failed to store query {query_id}: {e}")
+            return False
+    
+    def toggle_query_collection(self, collection_tags: List[str], active: bool) -> int:
+        """
+        Toggle visibility of queries with specific collection tags.
+        
+        Args:
+            collection_tags: Tags identifying the collection
+            active: Whether to make queries active or inactive
+            
+        Returns:
+            Number of queries affected
+        """
+        try:
+            # Find all queries with matching tags
+            aql = """
+            FOR query IN @@queries_collection
+                FILTER query.metadata.collection_tags != null
+                FILTER LENGTH(
+                    FOR tag IN @tags
+                        FILTER tag IN query.metadata.collection_tags
+                        RETURN 1
+                ) > 0
+                RETURN query
+            """
+            
+            cursor = self.db.aql.execute(
+                aql,
+                bind_vars={
+                    "@queries_collection": self.queries_collection_name,
+                    "tags": collection_tags
+                }
+            )
+            
+            affected_count = 0
+            for query in cursor:
+                query_id = query["doc_id"]
+                
+                if active and not query.get("is_active", True):
+                    # Activate: add to main nodes collection
+                    self.store_document(query_id, self._restore_document(query))
+                    # Update query active status
+                    self.queries_collection.update({"_key": query["_key"], "is_active": True})
+                    affected_count += 1
+                    
+                elif not active and query.get("is_active", True):
+                    # Deactivate: remove from main nodes collection
+                    try:
+                        self.nodes_collection.delete(self._make_key(query_id))
+                    except:
+                        pass  # May not exist in nodes
+                    # Update query active status
+                    self.queries_collection.update({"_key": query["_key"], "is_active": False})
+                    affected_count += 1
+            
+            logger.info(f"Toggled {affected_count} queries to active={active}")
+            return affected_count
+            
+        except ArangoError as e:
+            logger.error(f"Failed to toggle query collection: {e}")
+            return 0
+    
+    def get_query_history(self, researcher_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get query history, optionally filtered by researcher.
+        
+        Args:
+            researcher_id: Optional researcher ID filter
+            
+        Returns:
+            List of query documents with execution history
+        """
+        try:
+            if researcher_id:
+                aql = """
+                FOR query IN @@queries_collection
+                    FILTER query.query_context.researcher_id == @researcher_id
+                    SORT query.created_at DESC
+                    RETURN query
+                """
+                bind_vars = {
+                    "@queries_collection": self.queries_collection_name,
+                    "researcher_id": researcher_id
+                }
+            else:
+                aql = """
+                FOR query IN @@queries_collection
+                    SORT query.created_at DESC
+                    RETURN query
+                """
+                bind_vars = {"@queries_collection": self.queries_collection_name}
+            
+            cursor = self.db.aql.execute(aql, bind_vars=bind_vars)
+            
+            return [self._restore_document(doc) for doc in cursor]
+            
+        except ArangoError as e:
+            logger.error(f"Failed to get query history: {e}")
+            return []
+    
+    def analyze_conveyance_evolution(self, query_id: str) -> Dict[str, Any]:
+        """
+        Analyze how a query's results have evolved over time.
+        
+        Args:
+            query_id: Query to analyze
+            
+        Returns:
+            Evolution analysis including conveyance trends
+        """
+        try:
+            # Get query document
+            key = self._make_key(query_id)
+            query = self.queries_collection.get(key)
+            
+            if not query or not query.get("execution_history"):
+                return {"error": "No execution history found"}
+            
+            history = query["execution_history"]
+            
+            # Analyze trends
+            conveyance_values = [h["avg_conveyance"] for h in history]
+            result_counts = [h["total_results"] for h in history]
+            
+            # Calculate deltas
+            if len(history) > 1:
+                conveyance_delta = conveyance_values[-1] - conveyance_values[0]
+                result_delta = result_counts[-1] - result_counts[0]
+                
+                # Find new high-conveyance results
+                latest_results = set(history[-1]["result_doc_ids"])
+                initial_results = set(history[0]["result_doc_ids"])
+                new_results = latest_results - initial_results
+                
+                return {
+                    "query_id": query_id,
+                    "execution_count": len(history),
+                    "initial_conveyance": conveyance_values[0],
+                    "current_conveyance": conveyance_values[-1],
+                    "conveyance_delta": conveyance_delta,
+                    "conveyance_trend": "increasing" if conveyance_delta > 0 else "decreasing",
+                    "result_count_delta": result_delta,
+                    "new_high_value_results": len(new_results),
+                    "peak_conveyance": max(conveyance_values),
+                    "timestamps": [h.get("timestamp") for h in history]
+                }
+            else:
+                return {
+                    "query_id": query_id,
+                    "execution_count": 1,
+                    "message": "Need multiple executions for evolution analysis"
+                }
+            
+        except ArangoError as e:
+            logger.error(f"Failed to analyze conveyance evolution: {e}")
+            return {"error": str(e)}

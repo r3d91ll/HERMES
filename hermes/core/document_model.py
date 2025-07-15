@@ -27,6 +27,7 @@ class DocumentType(Enum):
     TEXT = "text"
     CODE = "code"
     DIRECTORY = "directory"
+    QUERY = "query"  # Queries as first-class documents
     UNKNOWN = "unknown"
 
 
