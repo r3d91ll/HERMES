@@ -654,8 +654,8 @@ class ArangoStorage(BaseStorage):
                     # Deactivate: remove from main nodes collection
                     try:
                         self.nodes_collection.delete(self._make_key(query_id))
-                    except:
-                        pass  # May not exist in nodes
+                    except (ArangoError, DocumentDeleteError):
+                        pass  # Document may not exist in nodes collection
                     # Update query active status
                     self.queries_collection.update({"_key": query["_key"], "is_active": False})
                     affected_count += 1
@@ -726,16 +726,20 @@ class ArangoStorage(BaseStorage):
             history = query["execution_history"]
             
             # Analyze trends
-            conveyance_values = [h["avg_conveyance"] for h in history]
-            result_counts = [h["total_results"] for h in history]
+            # Validate required fields exist
+            try:
+                conveyance_values = [h["avg_conveyance"] for h in history]
+                result_counts    = [h["total_results"]    for h in history]
+            except KeyError as e:
+                return {"error": f"Missing required field in execution history: {e}"}
             
             # Calculate deltas
             if len(history) > 1:
                 conveyance_delta = conveyance_values[-1] - conveyance_values[0]
-                result_delta = result_counts[-1] - result_counts[0]
+                result_delta     = result_counts[-1]    - result_counts[0]
                 
                 # Find new high-conveyance results
-                latest_results = set(history[-1]["result_doc_ids"])
+                latest_results  = set(history[-1]["result_doc_ids"])
                 initial_results = set(history[0]["result_doc_ids"])
                 new_results = latest_results - initial_results
                 
