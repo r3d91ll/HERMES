@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Data
+data/
+*.pdf
+*.csv
+*.json
+*.parquet
+!config.example.json
+!schema.json
+
+# Embeddings
+embeddings/
+*.npy
+*.npz
+*.pkl
+*.h5
+
+# Databases
+*.db
+*.sqlite
+arangodb_data/
+
+# Configuration
+config.yaml
+.env
+*.secret
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Documentation
+docs/_build/
