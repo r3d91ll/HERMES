@@ -21,8 +21,6 @@ Hermes handles the infrastructure concerns of:
 4. **Loading** data into ArangoDB or other graph databases
 5. **Training** graph embedding models (ISNE, Node2Vec, etc.)
 
-This allows downstream analysis systems (like HADES) to focus on their core algorithms rather than data preparation.
-
 ## Architecture
 
 ```
@@ -60,4 +58,4 @@ python -m hermes.pipeline --config config.yaml
 
 ## License
 
-[To be determined]
+Apache 2.0
