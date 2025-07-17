@@ -36,9 +36,9 @@ class JinaV4Embedder(BaseEmbedder):
         model_name: str = "jinaai/jina-embeddings-v4",
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
         truncate_dim: Optional[int] = 1024,  # Default to HADES' WHAT dimension
-        adapter_mask: Literal["retrieval", "text-matching", "code"] = "retrieval",
+        adapter_mask: Optional[Literal["retrieval", "text-matching", "code"]] = None,  # None loads all adapters
         batch_size: int = 32,
-        max_length: int = 8192,  # Balance between context and memory
+        max_length: int = 12288,  # 12k context as requested
     ):
         """
         Initialize Jina v4 embedder.
@@ -60,12 +60,18 @@ class JinaV4Embedder(BaseEmbedder):
         
         # Load model and tokenizer
         logger.info(f"Loading Jina v4 from {model_name}")
-        self.model = AutoModel.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            device_map=device,
-            adapter_mask=adapter_mask
-        )
+        model_kwargs = {
+            "trust_remote_code": True,
+            "device_map": device,
+        }
+        # Only add adapter_mask if specific adapter requested
+        if adapter_mask is not None:
+            model_kwargs["adapter_mask"] = adapter_mask
+            logger.info(f"Loading with {adapter_mask} adapter only")
+        else:
+            logger.info("Loading full model with all LoRA adapters")
+            
+        self.model = AutoModel.from_pretrained(model_name, **model_kwargs)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         
         # Move to device
@@ -73,12 +79,14 @@ class JinaV4Embedder(BaseEmbedder):
             self.model = self.model.to(device)
         self.model.eval()
         
-        logger.info(f"Jina v4 initialized with {adapter_mask} adapter, dim={truncate_dim}")
+        adapter_info = f"{adapter_mask} adapter" if adapter_mask else "all LoRA adapters"
+        logger.info(f"Jina v4 initialized with {adapter_info}, dim={truncate_dim}")
     
     def embed_texts(
         self,
         texts: List[str],
-        show_progress: bool = True
+        show_progress: bool = True,
+        task: Optional[Literal["retrieval", "text-matching", "code"]] = None
     ) -> np.ndarray:
         """
         Embed a list of text documents.
@@ -107,14 +115,29 @@ class JinaV4Embedder(BaseEmbedder):
             
             # Generate embeddings
             with torch.no_grad():
-                outputs = self.model(**inputs)
-                batch_embeddings = outputs.last_hidden_state.mean(dim=1)  # Mean pooling
+                # If all adapters loaded, need to specify task
+                if self.adapter_mask is None:
+                    task_to_use = task or "retrieval"  # Default to retrieval
+                    outputs = self.model(**inputs, task_label=task_to_use)
+                else:
+                    outputs = self.model(**inputs)
+                
+                # For Jina v4, use single_vec_emb (pooled embeddings)
+                if hasattr(outputs, 'single_vec_emb'):
+                    batch_embeddings = outputs.single_vec_emb
+                elif hasattr(outputs, 'embeddings'):
+                    batch_embeddings = outputs.embeddings
+                elif hasattr(outputs, 'last_hidden_state'):
+                    batch_embeddings = outputs.last_hidden_state.mean(dim=1)
+                else:
+                    raise ValueError(f"Unknown output format from Jina model: {type(outputs)}")
                 
                 # Truncate if needed
                 if self.truncate_dim:
                     batch_embeddings = batch_embeddings[:, :self.truncate_dim]
                 
-                embeddings.append(batch_embeddings.cpu().numpy())
+                # Convert to float32 for numpy (from bfloat16)
+                embeddings.append(batch_embeddings.float().cpu().numpy())
         
         return np.vstack(embeddings)
     

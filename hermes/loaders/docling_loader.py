@@ -14,9 +14,9 @@ from pathlib import Path
 import logging
 import json
 
-from docling import DoclingDocument
-from docling.processing import ProcessingService
-from docling.core import DocumentLevel
+from docling.document_converter import DocumentConverter
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.document import ConversionResult
 
 from hermes.core.base import BaseLoader
 
@@ -236,7 +236,7 @@ class DoclingLoader(BaseLoader):
             "source_path": docling_data["source_path"]
         }
     
-    def _extract_tables(self, doc: DoclingDocument) -> List[Dict[str, Any]]:
+    def _extract_tables(self, doc: ConversionResult) -> List[Dict[str, Any]]:
         """Extract tables from DoclingDocument."""
         tables = []
         for table in doc.tables:
@@ -250,7 +250,7 @@ class DoclingLoader(BaseLoader):
             })
         return tables
     
-    def _extract_images(self, doc: DoclingDocument) -> List[Dict[str, Any]]:
+    def _extract_images(self, doc: ConversionResult) -> List[Dict[str, Any]]:
         """Extract images with classifications."""
         images = []
         for image in doc.images:
@@ -263,7 +263,7 @@ class DoclingLoader(BaseLoader):
             })
         return images
     
-    def _extract_formulas(self, doc: DoclingDocument) -> List[Dict[str, Any]]:
+    def _extract_formulas(self, doc: ConversionResult) -> List[Dict[str, Any]]:
         """Extract mathematical formulas."""
         formulas = []
         for formula in doc.formulas:
@@ -276,7 +276,7 @@ class DoclingLoader(BaseLoader):
             })
         return formulas
     
-    def _extract_code(self, doc: DoclingDocument) -> List[Dict[str, Any]]:
+    def _extract_code(self, doc: ConversionResult) -> List[Dict[str, Any]]:
         """Extract code blocks."""
         code_blocks = []
         for code in doc.code_blocks:
@@ -288,7 +288,7 @@ class DoclingLoader(BaseLoader):
             })
         return code_blocks
     
-    def _extract_layout(self, doc: DoclingDocument) -> Dict[str, Any]:
+    def _extract_layout(self, doc: ConversionResult) -> Dict[str, Any]:
         """Extract document layout information."""
         return {
             "pages": doc.num_pages,
@@ -305,7 +305,7 @@ class DoclingLoader(BaseLoader):
             ]
         }
     
-    def _chunk_document(self, doc: DoclingDocument) -> List[Dict[str, Any]]:
+    def _chunk_document(self, doc: ConversionResult) -> List[Dict[str, Any]]:
         """Chunk document while preserving structure."""
         chunks = []
         
