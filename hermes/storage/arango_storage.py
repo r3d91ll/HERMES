@@ -87,6 +87,34 @@ class ArangoStorage(BaseStorage):
             index_type="flat"  # Start with exact search
         )
     
+    @classmethod
+    def from_config(cls, config):
+        """Create ArangoStorage from config object."""
+        storage_config = config.storage
+        conn = storage_config.connection
+        
+        return cls(
+            host=conn.get('host', 'localhost'),
+            port=int(conn.get('port', 8529)),
+            username=conn.get('username', 'root'),
+            password=conn.get('password', ''),
+            database=conn.get('database', 'hermes'),
+            nodes_collection=storage_config.graph.get('node_collection', 'nodes'),
+            edges_collection='edges',  # Will be multiple collections
+            create_collections=True
+        )
+    
+    def initialize(self):
+        """Initialize storage - ensure all collections exist."""
+        # The base collections are created in __init__
+        # Create additional edge collections for dimensional edges
+        edge_collections = ['edges_where', 'edges_what', 'edges_conveyance', 'edges_composite']
+        
+        for coll_name in edge_collections:
+            if not self.db.has_collection(coll_name):
+                logger.info(f"Creating edge collection '{coll_name}'")
+                self.db.create_collection(coll_name, edge=True, user_keys=True)
+    
     def _connect(self):
         """Establish connection to ArangoDB."""
         try:
