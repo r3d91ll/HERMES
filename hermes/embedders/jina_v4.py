@@ -64,10 +64,11 @@ class JinaV4Embedder(BaseEmbedder):
             "trust_remote_code": True,
             "device_map": device,
         }
-        # Only add adapter_mask if specific adapter requested
+        
+        # Note: adapter_mask is not a parameter for from_pretrained
+        # It's used during inference with task_label
         if adapter_mask is not None:
-            model_kwargs["adapter_mask"] = adapter_mask
-            logger.info(f"Loading with {adapter_mask} adapter only")
+            logger.info(f"Will use {adapter_mask} adapter during inference")
         else:
             logger.info("Loading full model with all LoRA adapters")
             
@@ -115,12 +116,9 @@ class JinaV4Embedder(BaseEmbedder):
             
             # Generate embeddings
             with torch.no_grad():
-                # If all adapters loaded, need to specify task
-                if self.adapter_mask is None:
-                    task_to_use = task or "retrieval"  # Default to retrieval
-                    outputs = self.model(**inputs, task_label=task_to_use)
-                else:
-                    outputs = self.model(**inputs)
+                # Specify task for the model
+                task_to_use = task or self.adapter_mask or "retrieval"  # Default to retrieval
+                outputs = self.model(**inputs, task=task_to_use)
                 
                 # For Jina v4, use single_vec_emb (pooled embeddings)
                 if hasattr(outputs, 'single_vec_emb'):
