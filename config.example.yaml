@@ -1,0 +1,112 @@
+# HERMES Pipeline Configuration
+hermes_config:
+  # Pipeline settings
+  pipeline:
+    batch_size: 10
+    max_workers: 4
+    chunk_size: 1000
+    chunk_overlap: 200
+    progress_bar: true
+    
+  # Document processing
+  processing:
+    # OCR settings for scanned PDFs
+    ocr:
+      enabled: true
+      min_chars_per_page: 100  # Below this, try OCR
+      dpi: 300
+      language: eng
+      
+    # Text extraction
+    extraction:
+      clean_text: true
+      preserve_structure: true
+      extract_metadata: true
+    
+  # Loader settings
+  loaders:
+    pdf:
+      use_docling: false  # Set true when available
+      extract_images: true
+      extract_tables: true
+      ocr_fallback: true
+    code:
+      extract_ast: true
+      include_comments: true
+      
+  # Embedding settings
+  embeddings:
+    primary_model: jina_v4
+    models:
+      jina_v4:
+        truncate_dim: 1024  # HADES WHAT dimension
+        adapter_mask: retrieval
+        batch_size: 32
+        max_length: 8192
+      sentence_transformers:
+        model_name: all-MiniLM-L6-v2
+        dimension: 384
+    
+  # Metadata extraction
+  metadata:
+    # DSPy settings
+    dspy:
+      enabled: true
+      model: gpt-4
+      training_examples_path: ./training_examples
+      optimize_on_load: false
+      
+    # Conveyance analysis
+    conveyance:
+      analyze_algorithms: true
+      analyze_equations: true
+      analyze_examples: true
+      analyze_code: true
+      complexity_threshold: 0.7
+      
+  # Storage settings
+  storage:
+    backend: arangodb
+    connection:
+      host: ${ARANGO_HOST:-localhost}
+      port: ${ARANGO_PORT:-8529}
+      username: ${ARANGO_USERNAME:-root}
+      password: ${ARANGO_PASSWORD}
+      database: ${ARANGO_DATABASE:-hermes}
+    
+    # Graph structure
+    graph:
+      name: document_graph
+      node_collection: nodes
+      edge_collections:
+        - edges_where
+        - edges_what
+        - edges_conveyance
+        - edges_composite
+        
+    # Edge creation rules
+    edges:
+      where:
+        create_parent_child: true
+        create_siblings: true
+        max_depth: 5
+      what:
+        similarity_threshold: 0.7
+        use_embeddings: true
+        use_keywords: true
+      conveyance:
+        min_score: 0.1
+        include_barriers: true
+        
+  # ISNE settings
+  isne:
+    enabled: true
+    embedding_dim: 128
+    training_iterations: 100
+    use_adaptive: true
+    
+  # Logging
+  logging:
+    level: INFO
+    file: hermes.log
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
