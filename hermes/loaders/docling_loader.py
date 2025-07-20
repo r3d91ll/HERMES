@@ -14,10 +14,16 @@ from pathlib import Path
 import logging
 import json
 
-from docling.document_converter import DocumentConverter
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult
-
+try:
+    from docling.document_converter import DocumentConverter
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.document import ConversionResult
+    DOCLING_AVAILABLE = True
+except ImportError:
+    DOCLING_AVAILABLE = False
+    DocumentConverter = None
+    ConversionResult = None
+    
 from hermes.core.base import BaseLoader
 
 
@@ -64,14 +70,12 @@ class DoclingLoader(BaseLoader):
         self.ocr_enabled = ocr_enabled
         self.chunk_size = chunk_size
         
-        # Initialize Docling processing service
-        self.processor = ProcessingService(
-            enable_ocr=ocr_enabled,
-            extract_tables=extract_tables,
-            extract_images=extract_images,
-            extract_formulas=extract_formulas,
-            extract_code=extract_code,
-        )
+        # Initialize Docling converter
+        if DOCLING_AVAILABLE:
+            self.converter = DocumentConverter()
+        else:
+            logger.warning("Docling not available. Install with: pip install docling")
+            self.converter = None
     
     def load(self, path: Union[str, Path]) -> Dict[str, Any]:
         """
@@ -93,9 +97,12 @@ class DoclingLoader(BaseLoader):
         if not path.exists():
             raise FileNotFoundError(f"Document not found: {path}")
         
+        if not DOCLING_AVAILABLE or not self.converter:
+            raise ImportError("Docling is not available. Install with: pip install docling")
+            
         try:
             # Process document with Docling
-            doc = self.processor.process(str(path))
+            doc = self.converter.convert(str(path))
             
             result = {
                 "source_path": str(path),
