@@ -1,0 +1,198 @@
+# Search topic configurations for paper gathering
+
+quantum_observer:
+  description: "Quantum mechanics observer effects and measurement theory"
+  categories:
+    - "quant-ph"
+    - "physics.hist-ph"
+    - "math-ph"
+    - "cond-mat.stat-mech"
+    - "gr-qc"
+  
+  queries:
+    - 'abs:"observer effect" AND abs:"quantum"'
+    - 'abs:"measurement problem" AND abs:"quantum"'
+    - 'abs:"wave function collapse"'
+    - 'abs:"relational quantum mechanics"'
+    - 'abs:"quantum information" AND abs:"observer"'
+    - 'abs:"quantum reference frame"'
+    - 'abs:"quantum measurement theory"'
+    - 'abs:"consciousness" AND abs:"quantum mechanics"'
+    - 'abs:"von Neumann" AND abs:"measurement"'
+    - 'abs:"decoherence" AND abs:"observer"'
+  
+  keywords:
+    - "observer effect"
+    - "measurement problem"
+    - "wave function collapse"
+    - "quantum measurement"
+    - "relational quantum"
+    - "quantum information"
+    - "consciousness"
+    - "decoherence"
+    - "observer dependence"
+    - "quantum boundary"
+    - "emergence"
+    - "von Neumann"
+    - "Wigner"
+    - "Copenhagen interpretation"
+    - "many worlds"
+    - "QBism"
+    - "Wheeler"
+
+node_embeddings:
+  description: "Graph embedding and representation learning techniques"
+  categories:
+    - "cs.LG"
+    - "cs.SI"
+    - "cs.AI"
+    - "stat.ML"
+  
+  queries:
+    - 'abs:"inductive node embedding"'
+    - 'abs:"shallow node embedding"'
+    - 'abs:"ISNE"'
+    - 'abs:"node2vec"'
+    - 'abs:"DeepWalk"'
+    - 'abs:"graph embedding" AND abs:"inductive"'
+    - 'abs:"LINE" AND abs:"network embedding"'
+    - 'abs:"structural deep network embedding"'
+    - 'abs:"graph representation learning" AND abs:"inductive"'
+    - 'abs:"transductive" AND abs:"inductive" AND abs:"embedding"'
+    - 'abs:"incremental node embedding"'
+    - 'abs:"streaming graph embedding"'
+  
+  keywords:
+    - "inductive node embedding"
+    - "shallow node embedding"
+    - "ISNE"
+    - "node2vec"
+    - "DeepWalk"
+    - "graph embedding"
+    - "network embedding"
+    - "representation learning"
+    - "transductive"
+    - "inductive"
+    - "LINE"
+    - "SDNE"
+    - "incremental embedding"
+    - "streaming graph"
+
+dspy_optimization:
+  description: "DSPy and language model optimization frameworks"
+  categories:
+    - "cs.CL"
+    - "cs.LG"
+    - "cs.AI"
+  
+  queries:
+    - 'abs:"DSPy"'
+    - 'abs:"declarative self-improving"'
+    - 'abs:"prompt optimization"'
+    - 'abs:"language model programming"'
+    - 'abs:"LM programming"'
+    - 'abs:"automatic prompt engineering"'
+    - 'abs:"program synthesis" AND abs:"language model"'
+    - 'abs:"few-shot learning" AND abs:"optimization"'
+    - 'abs:"in-context learning" AND abs:"optimization"'
+    - 'abs:"chain of thought" AND abs:"optimization"'
+  
+  keywords:
+    - "DSPy"
+    - "declarative self-improving"
+    - "prompt optimization"
+    - "language model programming"
+    - "automatic prompt"
+    - "few-shot"
+    - "in-context learning"
+    - "chain of thought"
+    - "program synthesis"
+    - "prompt engineering"
+
+information_theory:
+  description: "Information theory foundations"
+  categories:
+    - "cs.IT"
+    - "math.IT"
+    - "cs.CR"
+  
+  queries:
+    - 'abs:"Shannon" AND abs:"information theory"'
+    - 'abs:"entropy" AND abs:"information"'
+    - 'abs:"mutual information"'
+    - 'abs:"channel capacity"'
+    - 'abs:"rate distortion"'
+    - 'abs:"source coding"'
+    - 'abs:"channel coding"'
+  
+  keywords:
+    - "Shannon"
+    - "entropy"
+    - "mutual information"
+    - "channel capacity"
+    - "information theory"
+    - "coding theory"
+    - "compression"
+
+anthropology_cognitive:
+  description: "Anthropology and cognitive science intersections"
+  categories:
+    - "cs.CY"
+    - "physics.soc-ph"
+    - "q-bio.NC"
+  
+  queries:
+    - 'abs:"cultural evolution" AND abs:"information"'
+    - 'abs:"cognitive anthropology"'
+    - 'abs:"distributed cognition"'
+    - 'abs:"cultural transmission"'
+    - 'abs:"social learning" AND abs:"information"'
+    - 'abs:"epistemic" AND abs:"culture"'
+  
+  keywords:
+    - "cultural evolution"
+    - "cognitive anthropology"
+    - "distributed cognition"
+    - "cultural transmission"
+    - "social learning"
+    - "epistemic culture"
+    - "knowledge systems"
+
+ml_benchmarks:
+  description: "Machine learning papers with benchmark results"
+  categories:
+    - "cs.LG"
+    - "cs.CL"
+    - "cs.CV"
+    - "cs.AI"
+    - "stat.ML"
+  
+  benchmark_keywords:
+    - "state-of-the-art"
+    - "SOTA"
+    - "benchmark"
+    - "evaluation"
+    - "outperforms"
+    - "improvement"
+    - "accuracy"
+    - "F1 score"
+    - "BLEU"
+    - "perplexity"
+    - "mAP"
+    - "IoU"
+    - "results show"
+    - "performance"
+    - "baseline"
+    - "comparison"
+    - "ablation"
+  
+  dataset_names:
+    - "ImageNet"
+    - "COCO"
+    - "MNIST"
+    - "CIFAR"
+    - "GLUE"
+    - "SuperGLUE"
+    - "SQuAD"
+    - "WMT"
+    - "CoNLL"

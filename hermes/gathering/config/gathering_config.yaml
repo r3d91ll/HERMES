@@ -1,0 +1,61 @@
+# Configuration for paper gathering
+
+# Rate limiting settings
+rate_limiting:
+  download_delay: 5         # Seconds between downloads
+  batch_delay: 30          # Seconds to wait after batch
+  batch_size: 10           # Papers per batch
+
+# Output directories
+output_dirs:
+  chronological: "./data/ml_papers_chronological"
+  priority: "./data/priority_papers"
+  quantum: "./data/quantum_observer_papers"
+  ml_benchmarks: "./data/ml_benchmark_papers"
+
+# Chronological gathering settings
+chronological:
+  start_year: 1998
+  end_year: null  # null for current year
+  papers_per_year: 50
+  categories:
+    - "cs.LG"
+    - "cs.CL"
+    - "cs.CV"
+    - "cs.AI"
+    - "cs.IT"
+    - "math.IT"
+    - "stat.ML"
+
+# Priority topics settings
+priority:
+  papers_per_topic: 50
+  topics:
+    - quantum_observer
+    - node_embeddings
+    - dspy_optimization
+  
+# Quantum observer settings
+quantum:
+  papers_per_year: 20
+  start_year: 1998
+  relevance_threshold: 0.3
+
+# ML benchmarks settings
+ml_benchmarks:
+  min_year: 2017
+  require_results: true
+  min_benchmark_keywords: 2
+
+# Bridge detection settings
+bridge_detection:
+  similarity_threshold: 0.6
+  context_alpha: 1.7
+  min_bridge_strength: 0.6
+
+# ISNE training settings
+isne:
+  min_documents: 2000
+  embedding_dim: 128
+  similarity_threshold: 0.5
+  use_adaptive: true
