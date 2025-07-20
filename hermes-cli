@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""
+HERMES Command Line Interface
+
+Main entry point for all HERMES functionality.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+# Add HERMES to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from hermes.cli import gather_papers
+from hermes.processing import process_to_hades, build_isne_graph
+
+
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="HERMES - Universal Data Pipeline for HADES",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Commands:
+  gather    - Gather papers from various sources
+  process   - Process documents to HADES format
+  build     - Build ISNE graph from corpus
+  
+Examples:
+  # Gather papers chronologically
+  hermes-cli gather chronological --start-year 1998
+  
+  # Process documents
+  hermes-cli process --input-dir ./data/papers --output-dir ./datasets/hades
+  
+  # Build ISNE graph
+  hermes-cli build --paper-dirs ./data/papers --min-docs 2000
+        """
+    )
+    
+    parser.add_argument('--version', action='version', version='HERMES 0.1.0')
+    
+    subparsers = parser.add_subparsers(dest='command', help='Command to run')
+    
+    # Gather command
+    gather_parser = subparsers.add_parser('gather', help='Gather papers')
+    gather_parser.set_defaults(func=gather_papers.main)
+    
+    # Process command
+    process_parser = subparsers.add_parser('process', help='Process documents')
+    process_parser.add_argument('--input-dir', type=Path, required=True)
+    process_parser.add_argument('--output-dir', type=Path, required=True)
+    
+    # Build command
+    build_parser = subparsers.add_parser('build', help='Build ISNE graph')
+    build_parser.add_argument('--paper-dirs', nargs='+', type=Path)
+    build_parser.add_argument('--min-docs', type=int, default=2000)
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    # Execute command
+    if hasattr(args, 'func'):
+        # Delegate to subcommand
+        sys.argv = sys.argv[1:]  # Remove 'hermes-cli' from argv
+        args.func()
+    else:
+        print(f"Command '{args.command}' not yet implemented")
+
+
+if __name__ == "__main__":
+    main()
